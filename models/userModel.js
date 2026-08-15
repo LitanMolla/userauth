@@ -23,5 +23,10 @@ const userSchema = new Schema({
     },
     permission: {
         type: [String]
+    },
+    image: {
+        type: String
     }
 }, { timestamps: true })
+
+module.exports = mongoose.model('User', userSchema)
