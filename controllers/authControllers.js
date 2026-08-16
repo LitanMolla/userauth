@@ -76,7 +76,7 @@ const loginController = async (req, res) => {
                 process.env.JWT_SECRET_KEY,
                 { expiresIn: '7d' }
             )
-            return res.status(201).json({ success: true, message: 'Login success', token })
+            return res.status(200).json({ success: true, message: 'Login success', token })
         }
 
     } catch (error) {
