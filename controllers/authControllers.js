@@ -3,11 +3,13 @@ const permissionList = require('../utils/permission')
 const bcrypt = require('bcrypt')
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
+
+// register controller
 const registerController = async (req, res) => {
     try {
         const { role = 'user', password, email, name } = req.body
-        const { permission } = permissionList.filter(item => item.role == role)
-
+        const permission = permissionList.filter(item => item.role == role)[0].permission
+        
         // empty validation
         if (!name || !email || !password) {
             return res.status(400).json({ success: false, message: 'All feild are required' })
@@ -31,16 +33,20 @@ const registerController = async (req, res) => {
         const hashPassword = bcrypt.hashSync(password, 10)
 
         // user already exist or not
-        
+        const isExist = await User.findOne({email})
+        if (isExist) {
+            return res.status(400).json({ success: false, message: 'User already exists with this email' })
+        }
 
         // create new user
-        const user = new User({ email, name, password: hashPassword })
-
-        console.log(user)
+        const user = new User({ email, name, password: hashPassword, permission })
+        await user.save()
         return res.status(201).json({ success: true, message: 'Register success', user })
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
+// login controller 
 
 module.exports = { registerController }
