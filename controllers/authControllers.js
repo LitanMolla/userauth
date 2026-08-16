@@ -1,5 +1,6 @@
 const User = require('../models/userModel')
 const permissionList = require('../utils/permission')
+const bcrypt = require('bcrypt')
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
 const registerController = async (req, res) => {
@@ -26,8 +27,17 @@ const registerController = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Minimum 3 chars and Maximum 50 chars allowed' })
         }
 
-        // 
-        return res.status(201).json({success: true, message: 'Register success'})
+        // hash password
+        const hashPassword = bcrypt.hashSync(password, 10)
+
+        // user already exist or not
+        
+
+        // create new user
+        const user = new User({ email, name, password: hashPassword })
+
+        console.log(user)
+        return res.status(201).json({ success: true, message: 'Register success', user })
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message })
     }
