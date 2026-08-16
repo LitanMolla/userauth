@@ -1,6 +1,7 @@
 const User = require('../models/userModel')
 const permissionList = require('../utils/permission')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
 
@@ -9,7 +10,7 @@ const registerController = async (req, res) => {
     try {
         const { role = 'user', password, email, name } = req.body
         const permission = permissionList.filter(item => item.role == role)[0].permission
-        
+
         // empty validation
         if (!name || !email || !password) {
             return res.status(400).json({ success: false, message: 'All feild are required' })
@@ -33,7 +34,7 @@ const registerController = async (req, res) => {
         const hashPassword = bcrypt.hashSync(password, 10)
 
         // user already exist or not
-        const isExist = await User.findOne({email})
+        const isExist = await User.findOne({ email })
         if (isExist) {
             return res.status(400).json({ success: false, message: 'User already exists with this email' })
         }
@@ -41,12 +42,45 @@ const registerController = async (req, res) => {
         // create new user
         const user = new User({ email, name, password: hashPassword, permission })
         await user.save()
-        return res.status(201).json({ success: true, message: 'Register success', user })
+        return res.status(201).json({ success: true, message: 'Register success' })
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
 
 // login controller 
+const loginController = async (req, res) => {
+    try {
+        const { password, email } = req.body
 
-module.exports = { registerController }
+        // empty validation
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: 'All feild are required' })
+        }
+        // user exist or not
+        const isExist = await User.findOne({ email })
+        if (!isExist) {
+            return res.status(400).json({ success: false, message: 'User not exists with this email' })
+        }
+
+        // password match
+        const isMatchPasword = bcrypt.compareSync(password, isExist.password)
+
+        if (!isMatchPasword) {
+            return res.status(400).json({ success: false, message: 'Password not match' })
+        }
+
+        if (isMatchPasword) {
+            const token = jwt.sign(
+                { _id: isExist._id, email: isExist.email, name: isExist.name },
+                process.env.JWT_SECRET_KEY,
+                { expiresIn: '7d' }
+            )
+            return res.status(201).json({ success: true, message: 'Login success', token })
+        }
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message })
+    }
+}
+module.exports = { registerController, loginController }
